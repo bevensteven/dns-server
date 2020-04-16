@@ -15,23 +15,23 @@ impl BytePacketBuffer {
         }
     }
 
-    fn pos(&self) -> usize {
+    pub fn pos(&self) -> usize {
         self.pos
     }
 
-    fn step(&mut self, steps: usize) -> Result<()> {
+    pub fn step(&mut self, steps: usize) -> Result<()> {
         self.pos += steps;
         Ok(())
     }
 
-    fn seek(&mut self, pos: usize) -> Result<()> {
+    pub fn seek(&mut self, pos: usize) -> Result<()> {
         self.pos = pos;
         Ok(())
     }
 
     /// Methods for reading 1, 2, or 4 bytes.
 
-    fn read(&mut self) -> Result<u8> {
+    pub fn read(&mut self) -> Result<u8> {
         // check if we're at/past the end of buffer
         if self.pos >= 512 {
             return Err(Error::new(ErrorKind::InvalidInput, "End of buffer"));
@@ -43,12 +43,12 @@ impl BytePacketBuffer {
         Ok(res)
     }
 
-    fn read_u16(&mut self) -> Result<u16> {
+    pub fn read_u16(&mut self) -> Result<u16> {
         let res = ((self.read()? as u16) << 8) | (self.read()? as u16);
         Ok(res)
     }
 
-    fn read_u32(&mut self) -> Result<u32> {
+    pub fn read_u32(&mut self) -> Result<u32> {
         let res = ((self.read()? as u32) << 24)
             | ((self.read()? as u32) << 16)
             | ((self.read()? as u32) << 8)
@@ -59,14 +59,14 @@ impl BytePacketBuffer {
     /// Methods for fetching data at a specified position or range without
     /// modifying the internal position.
 
-    fn get(&mut self, pos: usize) -> Result<u8> {
+    pub fn get(&mut self, pos: usize) -> Result<u8> {
         if pos >= 512 {
             return Err(Error::new(ErrorKind::InvalidInput, "End of buffer"));
         }
         Ok(self.buf[pos])
     }
 
-    fn get_range(&mut self, start: usize, len: usize) -> Result<&[u8]> {
+    pub fn get_range(&mut self, start: usize, len: usize) -> Result<&[u8]> {
         if start + len >= 512 {
             return Err(Error::new(ErrorKind::InvalidInput, "End of buffer"));
         }
@@ -75,7 +75,7 @@ impl BytePacketBuffer {
 
     /// The tricky part is in reading domain names and taking labels into
     /// consideration.
-    fn read_qname(&mut self, outstr: &mut String) -> Result<()> {
+    pub fn read_qname(&mut self, outstr: &mut String) -> Result<()> {
         let mut pos = self.pos();
         let mut jumped = false;
 

@@ -1,7 +1,9 @@
-mod query_type;
-use query_type::QueryType;
+use std::io::Result;
 
-#[derive(Debug,Clone,PartialEq,Eq)]
+use super::byte_packet_buffer::BytePacketBuffer;
+use super::query_type::QueryType;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DnsQuestion {
     pub name: String,
     pub qtype: QueryType,
@@ -11,7 +13,7 @@ impl DnsQuestion {
     pub fn new(name: String, qtype: QueryType) -> DnsQuestion {
         DnsQuestion {
             name: name,
-            qtype: qtype
+            qtype: qtype,
         }
     }
 

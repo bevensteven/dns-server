@@ -1,14 +1,21 @@
-#[derive(Clone,Debug)]
+use std::io::Result;
+
+use super::byte_packet_buffer::BytePacketBuffer;
+use super::dns_header::DnsHeader;
+use super::dns_question::DnsQuestion;
+use super::dns_record::DnsRecord;
+use super::query_type::QueryType;
+
+#[derive(Clone, Debug)]
 pub struct DnsPacket {
     pub header: DnsHeader,
     pub questions: Vec<DnsQuestion>,
     pub answers: Vec<DnsRecord>,
     pub authorities: Vec<DnsRecord>,
-    pub resources: Vec<DnsRecord>
+    pub resources: Vec<DnsRecord>,
 }
 
 impl DnsPacket {
-
     pub fn new() -> DnsPacket {
         DnsPacket {
             header: DnsHeader::new(),
@@ -46,5 +53,4 @@ impl DnsPacket {
 
         Ok(result)
     }
-
 }
