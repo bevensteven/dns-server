@@ -56,6 +56,37 @@ impl BytePacketBuffer {
         Ok(res)
     }
 
+    /// Methods for writing
+
+    fn write(&mut self, val: u8) -> Result<()> {
+        if self.pos >= 512 {
+            return Err(Error::new(ErrorKind::InvalidInput, "End of buffer"));
+        }
+        self.buf[self.pos] = val;
+        self.pos += 1;
+        Ok(())
+    }
+
+    pub fn write_u8(&mut self, val: u8) -> Result<()> {
+        self.write(val)?;
+        Ok(())
+    }
+
+    pub fn write_u16(&mut self, val: u16) -> Result<()> {
+        self.write((val >> 8) as u8)?;
+        self.write((val & 0xFF) as u8)?;
+        Ok(())
+    }
+
+    pub fn write_u32(&mut self, val: u32) -> Result<()> {
+        self.write(((val >> 24) & 0xFF) as u8)?;
+        self.write(((val >> 16) & 0xFF) as u8)?;
+        self.write(((val >> 8) & 0xFF) as u8)?;
+        self.write(((val >> 0) & 0xFF) as u8)?;
+
+        Ok(())
+    }
+
     /// Methods for fetching data at a specified position or range without
     /// modifying the internal position.
 
@@ -124,6 +155,29 @@ impl BytePacketBuffer {
         if !jumped {
             self.seek(pos)?;
         }
+
+        Ok(())
+    }
+
+    pub fn write_qname(&mut self, qname: &str) -> Result<()> {
+        let split_str = qname.split('.').collect::<Vec<&str>>();
+
+        for label in split_str {
+            let len = label.len();
+            if len > 0x344 {
+                return Err(Error::new(
+                    ErrorKind::InvalidInput,
+                    "Single label exceeds 63 characters of length",
+                ));
+            }
+
+            self.write_u8(len as u8)?;
+            for b in label.as_bytes() {
+                self.write_u8(*b)?;
+            }
+        }
+
+        self.write_u8(0)?;
 
         Ok(())
     }
