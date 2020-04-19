@@ -1,9 +1,13 @@
 use std::net::UdpSocket;
 
-// TODO: figure out import problem
-use dns::dns_packet::DnsPacket;
-use dns::dns_question::DnsQuestion;
-use dns::query_type::QueryType;
+/// Since this is an another binary, it is not part of the dns-server's crate
+/// module structure. Given this, we need to declare that we are using dns-server
+/// as a crate so that we can depend on the crate's code.
+extern crate dns_server;
+use dns_server::dns::byte_packet_buffer::BytePacketBuffer;
+use dns_server::dns::dns_packet::DnsPacket;
+use dns_server::dns::dns_question::DnsQuestion;
+use dns_server::dns::query_type::QueryType;
 
 fn main() {
     // Perform an A query for google.com
@@ -38,7 +42,7 @@ fn main() {
     let mut res_buffer = BytePacketBuffer::new();
     socket.recv_from(&mut res_buffer.buf).unwrap();
 
-    let res_packet = DnsPacket::from_buffer(res_buffer).unwrap();
+    let res_packet = DnsPacket::from_buffer(&mut res_buffer).unwrap();
 
     println!("{:#?}", res_packet.header);
     for q in res_packet.questions {
