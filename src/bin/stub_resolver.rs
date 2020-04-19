@@ -11,8 +11,8 @@ use dns_server::dns::query_type::QueryType;
 
 fn main() {
     // Perform an A query for google.com
-    let qname = "google.com";
-    let qtype = QueryType::A;
+    let qname = "yahoo.com";
+    let qtype = QueryType::MX;
 
     // Use google's public DNS server
     let server = ("8.8.8.8", 53);
