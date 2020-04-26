@@ -1,4 +1,5 @@
 use std::net::UdpSocket;
+use std::io::Result;
 
 use crate::dns::query_type::QueryType;
 use crate::dns::dns_packet::DnsPacket;
@@ -18,7 +19,7 @@ fn lookup(qname: &str, qtype: QueryType, server: (&str, u16)) -> Result<DnsPacke
 
     let mut req_buffer = BytePacketBuffer::new();
     packet.write(&mut req_buffer).unwrap();
-    socket.send_to(req_buffer.buf[0..req_buffer.pos], server)?;
+    socket.send_to(&req_buffer.buf[0..req_buffer.pos], server)?;
 
     let mut res_buffer = BytePacketBuffer::new();
     socket.recv_from(&mut res_buffer.buf).unwrap();
@@ -26,7 +27,7 @@ fn lookup(qname: &str, qtype: QueryType, server: (&str, u16)) -> Result<DnsPacke
     DnsPacket::from_buffer(&mut res_buffer)
 }
 
-fn main() {
+pub fn main() {
     // Forward queries to Google's public DNS
     let server = ("8.8.8.8", 53);
 
@@ -39,7 +40,7 @@ fn main() {
         // With a socket ready we can read a packet. This will block until
         // one is received.
         let mut req_buffer = BytePacketBuffer::new();
-        let (_, src) = match socket.recv_from(req_buffer.buf) {
+        let (_, src) = match socket.recv_from(&mut req_buffer.buf) {
             Ok(x) => x,
             Err(e) => {
                 println!("Failed to read from UDP socket: {:#?}", e); continue; }
@@ -56,7 +57,7 @@ fn main() {
                 println!("Failed to parse UDP query packet: {:#?}", e);
                 continue;
             }
-        }
+        };
 
         // Create and init the response packet
         let mut packet = DnsPacket::new();
@@ -107,13 +108,14 @@ fn main() {
 
             let len = res_buffer.pos();
             let data = match res_buffer.get_range(0, len) {
-                Ok(_) => {},
+                Ok(x) => x,
                 Err(e) => {
                     println!("Failed to retrieve repsonse buffer: {:#?}", e);
+                    continue;
                 }
-            }
+            };
 
-            match socket.send_to(data, src) {
+            match socket.send_to(&data, src) {
                 Ok(_) => {},
                 Err(e) => {
                     println!("Failed to send response buffer: {:#?}", e);
