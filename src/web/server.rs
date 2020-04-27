@@ -27,6 +27,52 @@ fn lookup(qname: &str, qtype: QueryType, server: (&str, u16)) -> Result<DnsPacke
     DnsPacket::from_buffer(&mut res_buffer)
 }
 
+fn recursive_lookup(qname: &str, qtype: QueryType) -> Result<DnsPacket> {
+    // assume we always start with *a.root-servers.net*
+    let mut ns = "198.41.0.4".to_string();
+
+    loop {
+        println!("Attempting lookup of {:?} {} with ns {}", qtype, qname, ns);
+
+        // send query to active server
+        let ns_copy = ns.clone();
+
+        let server = (ns_copy.as_str(), 53);
+        let response = lookup(qname, qtype.clone(), server)?;
+
+        // if there are entries in the answer section, and no errors, we're done!
+        if !response.answers.is_empty() && 
+            response.header.rescode == ResultCode::NOERROR {
+
+            return Ok(response.clone());
+        }
+
+        if response.header.rescode == ResultCode::NXDOMAIN {
+            return Ok(response.clone());
+        }
+
+        if let Some(new_ns) = response.get_resolved_ns(qname) {
+            ns = new_ns.clone();
+            continue;
+        }
+
+        let new_ns_name = match response.get_unresolved_ns(qname) {
+            Some(x) => x,
+            None => return Ok(response.clone())
+        };
+
+        let recursive_response = recursive_lookup(&new_ns_name, QueryType::A)?;
+        
+        // pick a random IP from the result, and restart the loop
+        // if no such record is available, we return the last result we got
+        if let Some(new_ns) = recursive_response.get_random_a() {
+            ns = new_ns.clone();
+        } else {
+            return Ok(response.clone())
+        }
+    }
+}
+
 pub fn main() {
     // Forward queries to Google's public DNS
     let server = ("8.8.8.8", 53);
@@ -77,7 +123,7 @@ pub fn main() {
             // Query can be forwarded to the target server.
             // It's possible that the query will fail, in which case we can use the
             // SERVFAIL response code.
-            if let Ok(result) = lookup(&question.name, question.qtype, server) {
+            if let Ok(result) = recursive_lookup(&question.name, question.qtype) {
                 packet.questions.push(question.clone());
                 packet.header.rescode = result.header.rescode;
 
